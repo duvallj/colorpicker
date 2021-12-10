@@ -1,4 +1,5 @@
 const path = require("path");
+const ThreadsPlugin = require('threads-plugin');
 
 module.exports = {
   entry: "./src/index.ts",
@@ -7,8 +8,13 @@ module.exports = {
     rules: [
       {
         test: /\.tsx?$/,
-        use: "ts-loader",
         exclude: /node_modules/,
+        loader: "ts-loader",
+        options: {
+          compilerOptions: {
+            module: "esnext",
+          },
+        },
       },
     ],
   },
@@ -19,6 +25,9 @@ module.exports = {
       ".js",
     ],
   },
+  plugins: [
+    new ThreadsPlugin(),
+  ],
   output: {
     filename: "bundle.js",
     path: path.resolve(__dirname, "dist"),

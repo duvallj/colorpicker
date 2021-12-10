@@ -36,6 +36,10 @@ export class RCanvas {
         this.hFactor = this.canvas.height / this.rHeight;
         this.wFactor = this.canvas.width / this.rWidth;
 
+        for (const obj of this.drawables) {
+            obj.resize(this.canvas.width, this.canvas.height);
+        }
+
         this.draw();
     }
 
@@ -66,6 +70,8 @@ export class RRect implements IDrawable {
         this.alpha = alpha;
     }
 
+    public resize(_width: number, _height: number) {}
+
     public draw(ctx: CanvasRenderingContext2D, wFactor: number, hFactor: number) {
         ctx.fillStyle = this.color;
         ctx.globalAlpha = this.alpha;
@@ -88,6 +94,8 @@ export class RImg implements IDrawable {
         this.height = height;
         this.image = image;
     }
+
+    public resize(_width: number, _height: number) {}
 
     public draw(ctx: CanvasRenderingContext2D, wFactor: number, hFactor: number) {
         if (this.image !== undefined) {

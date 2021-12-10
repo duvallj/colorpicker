@@ -2,7 +2,7 @@
  * originally at https://github.com/Rufflewind/_urandom/blob/master/colorpicker/cielab.js */
 
 import { xyz as XyzConverter, matrix, Matrix3D, Vector3D } from "ciebase-ts";
-import { IXyzConverter } from "./types";
+import { ColorResult } from "./types";
 
 const SrgbXyzConverter = XyzConverter();
 
@@ -62,32 +62,34 @@ function cielab_from_xyz(xyz: Vector3D): Vector3D {
     return lab;
 }
 
-function clamp(x: number, low: number = 0.0, high: number = 1.0): [boolean, number] {
+function clamp_number(x: number, low: number = 0.0, high: number = 1.0): ColorResult<number> {
     if (x < low) {
-        return [true, low];
+        return { inGamut: false, val: low };
     } else if (x > high) {
-        return [true, high];
+        return { inGamut: false, val: high };
     } else {
-        return [false, x];
+        return { inGamut: true, val: x };
     }
 }
 
-function clamp_linear(xyz: Vector3D): [boolean, Vector3D] {
-    const [bad_x, x] = clamp(xyz[0]);
-    const [bad_y, y] = clamp(xyz[1]);
-    const [bad_z, z] = clamp(xyz[2]);
-    return [bad_x || bad_y || bad_z, [x, y, z]]; 
+export function clamp(vec: Vector3D): ColorResult<Vector3D> {
+    const res1 = clamp_number(vec[0]);
+    const res2 = clamp_number(vec[1]);
+    const res3 = clamp_number(vec[2]);
+    return {
+        inGamut: res1.inGamut && res2.inGamut && res3.inGamut,
+        val: [res1.val, res2.val, res3.val],
+    }; 
 }
 
-exports.srgbToCielab = function(rgb: Vector3D): [boolean, Vector3D] {
+export function srgbToCielab(rgb: Vector3D): ColorResult<Vector3D> {
     const xyz = SrgbXyzConverter.fromRgb(rgb);
     const lab = cielab_from_xyz(xyz);
-    return [false, lab];
+    return { inGamut: true, val: lab };
 };
 
-exports.cielabToSrgb = function(lab: Vector3D): [boolean, Vector3D] {
+export function cielabToSrgb(lab: Vector3D): ColorResult<Vector3D> {
     const xyz = cielab_to_xyz(lab);
-    const [bad, xyz_clamped] = clamp_linear(xyz);
-    const rgb = SrgbXyzConverter.toRgb(xyz_clamped);
-    return [bad, rgb];
+    const rgb = SrgbXyzConverter.toRgb(xyz);
+    return clamp(rgb);
 };
