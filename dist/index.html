@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="A simple interactive CIELAB and CIECAM02 color picker" />
+    <title>CIELAB and CIECAM02 color picker</title>
+    <link rel="icon" type="image/png" href="uploads/favicon-16.png" sizes="16x16" />
+    <link rel="icon" type="image/png" href="uploads/favicon-32.png" sizes="32x32" />
+    <link rel="icon" type="image/png" href="uploads/favicon-200.png" />
+    <link rel="stylesheet" href="style.css" />
+    <script async src="bundle.js" onload="init()"></script>
+  </head>
+  <body>
+    <main class="main" role="main">
+      <h1 class="title">CIE<a href="https://en.wikipedia.org/wiki/Lab_color_space">LAB</a>&<a href="https://en.wikipedia.org/wiki/CIECAM02">CAM02</a> Color Picker</h1>
+      <div class="canvas-container">
+        <canvas id="canvas">Canvas is not supported by your browser</canvas>
+      </div>
+      <div class="controls">
+        <div class="controls-display">
+          <input id="slider" type="range" value="50" step="1" min="0" max="100" />
+          <div id="swatch"></div>
+          <input id="rgbhex" type="text" value="#000000" />
+        </div>
+        <div class="controls-cie">
+          <label id="field1-label" for="field1">L</label><input id="field1" type="number" value="50" />
+          <label id="field2-label" for="field2">a</label><input id="field2" type="number" value="0" />
+          <label id="field3-label" for="field3">b</label><input id="field3" type="number" value="0" />
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+        <a href="https://github.com/duvallj/colorpicker/">Source Code</a>
+        <a href="https://duvallj.pw">Home</a>
+        <a href="https://blog.duvallj.pw">Blog</a>
+      </table>
+    </footer>
+  </body>
+</html>
