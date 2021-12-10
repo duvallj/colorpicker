@@ -1,8 +1,9 @@
 import { spawn, Worker, Pool, FunctionThread } from "threads";
-import { IDrawable } from "./types";
+import { IDrawable, ColorSpace } from "./types";
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import workerUrl from 'threads-plugin/dist/loader?name=worker!./renderer_worker.ts';
+import { StateManager } from "./controls";
 
 export class Renderer implements IDrawable {
     private pool: Pool<FunctionThread>;
@@ -16,16 +17,16 @@ export class Renderer implements IDrawable {
     private drawScheduled: boolean;
     private drawFull: boolean;
 
-    public view: string;
+    private stateManager: StateManager;
 
-    constructor(canvas: HTMLCanvasElement, numWorkers: number, view: string) {
+    constructor(canvas: HTMLCanvasElement, numWorkers: number, stateManager: StateManager) {
         this.ctx = canvas.getContext("2d");
         this.pool = Pool(
             () => spawn(new Worker(workerUrl)),
             { size: numWorkers }
         ) as Pool<FunctionThread>;
         this.numWorkers = numWorkers;
-        this.view = view;
+        this.stateManager = stateManager;
     }
 
     public resize(width: number, height: number) {
@@ -91,7 +92,7 @@ export class Renderer implements IDrawable {
                     return this.pool.queue(async renderPortion => {
                         return renderPortion(
                             this.width, this.height, yBegin, yEnd,
-                            maxChroma, inpZ, this.view
+                            maxChroma, inpZ, this.stateManager.state.view,
                         );
                     }).then((result: unknown) => {
                         const data = result as Uint8ClampedArray;

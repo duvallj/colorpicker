@@ -1,6 +1,6 @@
 @font-face {
   font-family: Inconsolata;
-  src: url("fonts/Inconsolata/Inconsolata-VariableFont_wdth,wght.ttf");
+  src: url("./fonts/Inconsolata/Inconsolata-VariableFont_wdth,wght.ttf");
   font-display: swap;
 }
 
@@ -94,7 +94,7 @@ h1 {
     "l1 f1"
     "l2 f2"
     "l3 f3";
-  grid-template-columns: 3ch 5ch;
+  grid-template-columns: 3ch 10ch;
 }
 
 #field1-label {

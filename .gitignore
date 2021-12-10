@@ -1,5 +1,5 @@
 # Ignore built package
-dist/*.js
+dist/
 
 # Ignore NPM caches
 node_modules/
