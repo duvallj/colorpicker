@@ -31,6 +31,7 @@ export interface DisplayMap {
 export class State {
   view: ColorSpace;
   rep: Vector3D;
+  maxChroma: number;
 }
 
 export interface IStateUpdater {

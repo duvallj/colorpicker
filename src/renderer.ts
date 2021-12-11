@@ -1,15 +1,21 @@
 import { spawn, Worker, Pool, FunctionThread } from "threads";
-import { IDrawable, ColorSpace } from "./types";
+import { State, IDrawable, IStateUpdater } from "./types";
+import { StateManager } from "./controls";
+import { VIEWS } from "./display";
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import workerUrl from 'threads-plugin/dist/loader?name=worker!./renderer_worker.ts';
-import { StateManager } from "./controls";
 
-export class Renderer implements IDrawable {
+export class Renderer implements IDrawable, IStateUpdater {
     private pool: Pool<FunctionThread>;
     private numWorkers: number;
+    private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
     private img: ImageData;
+
+    private inpZ: number;
+    private cursorX: number;
+    private cursorY: number;
 
     private width: number;
     private height: number;
@@ -20,6 +26,7 @@ export class Renderer implements IDrawable {
     private stateManager: StateManager;
 
     constructor(canvas: HTMLCanvasElement, numWorkers: number, stateManager: StateManager) {
+        this.canvas = canvas;
         this.ctx = canvas.getContext("2d");
         this.pool = Pool(
             () => spawn(new Worker(workerUrl)),
@@ -44,9 +51,6 @@ export class Renderer implements IDrawable {
     render() {
         createImageBitmap(this.img).then((img) => {
             const ctx = this.ctx;
-            const inp = [0.5, 0.5, 0.5];
-            const cursorX = inp[0] * this.width;
-            const cursorY = (1.0 - inp[1]) * this.height;
 
             ctx.clearRect(0, 0, this.width, this.height);
             ctx.save();
@@ -55,12 +59,12 @@ export class Renderer implements IDrawable {
 
             ctx.strokeStyle = "white";
             ctx.beginPath();
-            ctx.arc(cursorX, cursorY, 4, 0, 2 * Math.PI);
+            ctx.arc(this.cursorX, this.height - this.cursorY, 4, 0, 2 * Math.PI);
             ctx.stroke();
 
             ctx.strokeStyle = "black";
             ctx.beginPath();
-            ctx.arc(cursorX, cursorY, 5, 0, 2 * Math.PI);
+            ctx.arc(this.cursorX, this.height - this.cursorY, 5, 0, 2 * Math.PI);
             ctx.stroke();
         });
 
@@ -79,8 +83,6 @@ export class Renderer implements IDrawable {
 
         if (this.drawFull) {
             console.time("redraw");
-            const inpZ = 0.5;
-            const maxChroma = 100;
             const blockHeight = Math.ceil(this.height / this.numWorkers);
             const promises: Promise<void>[] = [];
             for (let yBegin = 0; yBegin < this.height; yBegin += blockHeight) {
@@ -88,11 +90,12 @@ export class Renderer implements IDrawable {
                 if (yEnd > this.height) {
                     yEnd = this.height;
                 }
-                const promise: Promise<void> = ((yBegin, yEnd) => {
+                const promise: Promise<void> = (async (yBegin, yEnd) => {
                     return this.pool.queue(async renderPortion => {
                         return renderPortion(
                             this.width, this.height, yBegin, yEnd,
-                            maxChroma, inpZ, this.stateManager.state.view,
+                            this.stateManager.state.maxChroma, this.inpZ,
+                            this.stateManager.state.view,
                         );
                     }).then((result: unknown) => {
                         const data = result as Uint8ClampedArray;
@@ -111,5 +114,61 @@ export class Renderer implements IDrawable {
 
     public notifyDrawFull() {
         this.drawFull = true;
+    }
+
+    register(callback: (u: IStateUpdater) => void): void {
+        var mouseDown = false;
+        const fullCallback = ((s: Renderer) => {
+            return (e: MouseEvent) => {
+                s.cursorX = e.offsetX;
+                s.cursorY = e.offsetY;
+                callback(s);
+            }
+        })(this);
+
+        this.canvas.addEventListener("mousedown", (e: MouseEvent) => {
+            if (e.buttons & 1) {
+                e.preventDefault();
+                mouseDown = true;
+                fullCallback(e);
+            }
+        });
+        this.canvas.addEventListener("mousemove", (e: MouseEvent) => {
+            if (mouseDown) {
+                e.preventDefault();
+                fullCallback(e);
+            }
+        });
+        this.canvas.addEventListener("mouseup", (e: MouseEvent) => {
+            e.preventDefault();
+            mouseDown = false;
+        });
+    }
+    
+    sendUpdate(oldState: State): void {
+        const view = VIEWS[oldState.view];
+        let inp = view.untransform(oldState.rep, oldState.maxChroma);
+        this.inpZ = inp[0];
+        inp[1] = this.cursorX / this.width;
+        inp[2] = 1.0 - this.cursorY / this.height;
+        oldState.rep = view.transform(inp, oldState.maxChroma);
+    }
+
+    getUpdate(newState: State): void {
+        const view = VIEWS[newState.view];
+        const inp = view.untransform(
+            newState.rep,
+            newState.maxChroma
+        );
+
+        if (this.inpZ !== inp[0]) {
+            this.notifyDrawFull();
+            this.inpZ = inp[0];
+        }
+        
+        this.cursorX = inp[1] * this.width;
+        this.cursorY = inp[2] * this.height;
+
+        this.redraw();
     }
 }

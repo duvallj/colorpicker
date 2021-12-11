@@ -2,7 +2,6 @@ import "./style.css";
 
 import { Renderer } from "./renderer";
 import { RCanvas } from "./resizeable";
-import { ColorSpace } from "./types";
 import { IntField, Slider, Swatch, HexField, StateManager } from "./controls";
 
 const field1 = new IntField("field1-label", "field1", 0);
@@ -27,7 +26,9 @@ const renderer = new Renderer(
     navigator.hardwareConcurrency || 4,
     stateManager,
 );
+stateManager.addInput(renderer);
 rcanvas.drawables.push(renderer); 
+stateManager.callback(hex);
 rcanvas.resize();
 
 window.onresize = (_ev): any => {

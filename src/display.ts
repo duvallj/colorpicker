@@ -5,17 +5,17 @@ import { DisplayMap } from "./types";
 
 function inpToLab(inp: Vector3D, maxChroma: number): Vector3D {
     return [
-        inp[2],
-        (2.0 * inp[0] - 1.0) * maxChroma,
+        inp[0],
         (2.0 * inp[1] - 1.0) * maxChroma,
+        (2.0 * inp[2] - 1.0) * maxChroma,
     ];
 }
 
 function labToInp(lab: Vector3D, maxChroma: number): Vector3D {
     return [
+        lab[0],
         (lab[1] / maxChroma + 1.0) / 2.0,
         (lab[2] / maxChroma + 1.0) / 2.0,
-        lab[0],
     ];
 }
 

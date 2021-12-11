@@ -1,10 +1,8 @@
 import { cam, IRequiredJchProps } from "ciecam02-ts";
-import { xyz, Vector3D } from "ciebase-ts";
-import { clamp } from "./cielab";
+import { Vector3D } from "ciebase-ts";
+import { clamp, srgb_to_xyz, srgb_from_xyz } from "./cielab";
 import { ColorResult } from "./types";
 
-// TODO: allow other color spaces besides sRGB
-const SrgbXyzConverter = xyz();
 // TODO: allow other viewing conditions besides the default
 const Ciecam02Converter = cam();
 
@@ -34,15 +32,18 @@ export function jchToLab(jch: IRequiredJchProps): Vector3D {
 }
 
 export function srgbToCiecam02(rgb: Vector3D): ColorResult<Vector3D> {
-    const jch = Ciecam02Converter.fromXyz(SrgbXyzConverter.fromRgb(rgb));
-    return { inGamut: true, val: [jch.J, jch.C, jch.h] };
+    const { inGamut: inGamut, val: xyz } = srgb_to_xyz(rgb);
+    const jch = Ciecam02Converter.fromXyz(xyz);
+    return { inGamut: inGamut, val: [jch.J, jch.C, jch.h] };
 }
 
 export function ciecam02ToSrgb(jch: Vector3D): ColorResult<Vector3D> {
-    const rgb = SrgbXyzConverter.toRgb(Ciecam02Converter.toXyz({
+    const xyz = Ciecam02Converter.toXyz({
         J: jch[0],
         C: jch[1],
         h: jch[2],
-    }));
-    return clamp(rgb);
+    });
+    const { inGamut: g1, val: rgb } = srgb_from_xyz(xyz);
+    const { inGamut: g2, val: rgb_clamped } = clamp(rgb);
+    return { inGamut: g1 && g2, val: rgb_clamped };
 }

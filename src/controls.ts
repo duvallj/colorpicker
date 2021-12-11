@@ -10,8 +10,6 @@ export class IntField implements IStateUpdater {
     constructor(labelId: string, inputId: string, index: number) {
         this.label = document.getElementById(labelId) as HTMLLabelElement;
         this.input = document.getElementById(inputId) as HTMLInputElement;
-        console.log(inputId);
-        console.log(this.input);
         this.index = index;
     }
 
@@ -24,8 +22,9 @@ export class IntField implements IStateUpdater {
     }
 
     getUpdate(newState: State): void {
-        this.label.innerText = VIEWS[newState.view].fieldNames[this.index];
-        this.input.valueAsNumber = newState.rep[this.index];
+        const view = VIEWS[newState.view];
+        this.label.innerText = view.fieldNames[this.index];
+        this.input.value = newState.rep[this.index].toFixed(2);
     }
 }
 
@@ -34,8 +33,6 @@ export class Slider implements IStateUpdater {
 
     constructor(sliderId: string) {
         this.slider = document.getElementById(sliderId) as HTMLInputElement;
-        console.log(sliderId);
-        console.log(this.slider);
     }
     
     register(callback: (u: IStateUpdater) => void): void {
@@ -43,11 +40,11 @@ export class Slider implements IStateUpdater {
     }
     
     sendUpdate(oldState: State): void {
-        oldState.rep[0] = this.slider.valueAsNumber;
+        oldState.rep[0] = this.slider.valueAsNumber / parseInt(this.slider.max);
     }
 
     getUpdate(newState: State): void {
-        this.slider.valueAsNumber = newState.rep[0];
+        this.slider.valueAsNumber = newState.rep[0] * parseInt(this.slider.max);
     }
 }
 
@@ -69,7 +66,7 @@ export class Swatch implements IStateUpdater {
     getUpdate(newState: State): void {
         const { val: rgb } = VIEWS[newState.view].toSrgb(newState.rep);
         this.swatch.style.backgroundColor =
-            `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+            `rgb(${rgb[0]*255.0}, ${rgb[1]*255.0}, ${rgb[2]*255.0})`;
     }
 }
 
@@ -78,8 +75,6 @@ export class HexField implements IStateUpdater {
 
     constructor(inputId: string) {
         this.input = document.getElementById(inputId) as HTMLInputElement;
-        console.log(inputId);
-        console.log(this.input);
     }
     
     register(callback: (u: IStateUpdater) => void): void {
@@ -100,25 +95,30 @@ export class HexField implements IStateUpdater {
 
 export class StateManager {
     private inputs: IStateUpdater[];
+    public callback: (u: IStateUpdater) => void;
     public state: State;
 
     constructor() {
         this.inputs = [];
         this.state = {
             view: ColorSpace.LAB,
-            rep: [50, 0, 0],
+            rep: [0.5, 0.0, 0.0],
+            maxChroma: 1.0,
         };
-    }
 
-    processUpdate(u: IStateUpdater) {
-        u.sendUpdate(this.state);
-        for (const other of this.inputs) {
-            other.getUpdate(this.state);
-        }
+        // Bind `this` to a function more tightly
+        this.callback = ((s: StateManager) => {
+            return (u: IStateUpdater) => {
+                u.sendUpdate(s.state);
+                for (const other of s.inputs) {
+                    other.getUpdate(s.state);
+                }
+            };
+        })(this);
     }
 
     public addInput(u: IStateUpdater) {
-        u.register(this.processUpdate);
+        u.register(this.callback);
         this.inputs.push(u);
     }
 }

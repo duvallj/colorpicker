@@ -7,12 +7,12 @@ import { Vector3D } from "ciebase-ts";
 expose(function renderPortion(width: number, height: number, yBegin: number, yEnd: number, maxChroma: number, inpZ: number, view: ColorSpace): Uint8ClampedArray {
     const transform = VIEWS[view].transform;
     const toSrgb = VIEWS[view].toSrgb;
-    let inp: Vector3D = [0.0, 0.0, inpZ];
+    let inp: Vector3D = [inpZ, 0.0, 0.0];
     let data = new Uint8ClampedArray(4 * width * (yEnd - yBegin));
     for (let y = yBegin; y < yEnd; ++y) {
-        inp[1] = 1.0 - y / height;
+        inp[2] = 1.0 - y / height;
         for (let x = 0; x < width; ++x) {
-            inp[0] = x / width;
+            inp[1] = x / width;
             const r = toSrgb(transform(inp, maxChroma));
             let rgb = r.val;
             if (!r.inGamut) {
